@@ -1,0 +1,14 @@
+1 BenchPress
+2 BodyWeightSquats
+3 CleanAndJerk
+4 HandstandPushups
+5 HandstandWalking
+6 HulaHoop
+7 JumpingJack
+8 JumpRope
+9 Lunges
+10 PommelHorse
+11 PullUps
+12 Punch
+13 PushUps
+14 WallPushups
