@@ -8,12 +8,13 @@ import numpy as np
 from PIL import Image
 from skimage.io import imread
 from skimage.io import imsave
+import os.path
 
 def writeOpticalFlow(path,filename,w,h,c):
 	count=0
 	frame_no =1
 	try:
-		fileN = filename + "_" + str(frame_no) + ".jpg"	
+		fileN = filename + "_" + str(frame_no) + ".jpg"
 		frame1 = imread(path + '/' + fileN)
 
 		if frame1==None:
@@ -59,7 +60,7 @@ def writeOpticalFlow(path,filename,w,h,c):
 
 def writeOF():
 
-	root = "../videos/"
+	root = "../spatial/sp_images/"
 	w=224
 	h=224
 	c=0
