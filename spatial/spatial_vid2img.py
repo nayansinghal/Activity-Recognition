@@ -5,67 +5,62 @@ import os
 import pickle
 import shutil
 import gc
+from skvideo.io import vread
+from skvideo.io import vreader
+from skvideo.io import vwrite
 
 def write_images():
 
-	root = '../temp/'
+	root = 'sp_images_20/'
 
-	with open('../dataset/merged_data.pickle', 'rb') as f:
-		 var1 = pickle.load(f)
+	classes = open('../dataset/classInd_14.txt','r')
+	var1 = {}
+	for line in classes:
+		words = line.split(" ")
+		var1[words[1].split("\n")[0]] = words[0]
 
 	for path, subdirs, files in os.walk(root):
 		for filename in files:
 			print filename
-			folder = 'sp_images' + '/' + filename.split('.')[0] + '/'   
-			if not os.path.isdir(folder):
-				os.mkdir(folder)
-			else:
-				shutil.rmtree(folder)
-				os.mkdir(folder)
-			try:
-				cnt = 0
-				full_path = path + '/' + filename
-				cap = cv2.VideoCapture(full_path)
-				fcnt = 1
+			if ".DS_Store" not in filename:
+				folder = 'im_train' + '/' + filename.split('.')[0] + '/'   
+				if not os.path.isdir(folder):
+					os.mkdir(folder)
+				else:
+					shutil.rmtree(folder)
+					os.mkdir(folder)
+				try:
+					cnt = 0
+					full_path = path + '/' + filename
+					cap = vreader(full_path)
+					fcnt = 1
 
-				while(cap.isOpened()):
-					ret, frame = cap.read()
-					if frame == None:
-						break
-
-					fpath = 'sp_images/'
-					vid_name = filename.split('.')[0]
-					img_path = folder + vid_name + '_{}.jpg'.format(cnt + 1)
-					img_name = vid_name + '_{}'.format(cnt + 1)
-					print 'image name', img_name
-					if fcnt % 10 == 0:
-						print img_name
-						cv2.imwrite(img_path, frame)
+					for frame in cap:
+						vid_name = filename.split('.')[0]
+						img_path = folder + vid_name + '_{}.jpg'.format(cnt + 1)
+						img_name = vid_name + '_{}'.format(cnt + 1)
+						print 'image name:', img_name
+						vwrite(img_path, frame)
 						cnt = cnt + 1
-					fcnt += 1
+						fcnt += 1
 
-				if cnt:
-					with open("count.txt", "a") as txt:
-						text = str(cnt) + " " + img_name.split('.')[0] + "\n"
-						txt.write(text)
-				cap.release()
-				#cv2.destroyAllWindows()
-			except (RuntimeError, TypeError, NameError):
-				#with open("logfile.txt", "a") as h:
-				#    h.write(e)
-				print "Some Error happened"
-				cap.release()
-				cv2.destroyAllWindows()
+					if cnt:
+						with open("count.txt", "a") as txt:
+							text = str(cnt) + " " + img_name.split('.')[0] + "\n"
+							txt.write(text)
+				except (RuntimeError, TypeError, NameError):
+					print "Some Error happened"
 
 def data_prep():
 
-	root = './sp_images/'
+	root = 'im_train/'
 	path = os.path.join(root, "")
 
-	with open('../dataset/merged_data.pickle', 'rb') as f:
-		 var1 = pickle.load(f)
-	dic = {}
-	vidno = 0
+	classes = open('../dataset/classInd_14.txt','r')
+	var1 = {}
+	for line in classes:
+		words = line.split(" ")
+		var1[words[1].split("\n")[0]] = words[0]
 
 	for path, subdirs, files in os.walk(root):
 		for filename in files:
@@ -78,11 +73,10 @@ def data_prep():
 					print vidno, 
 					vidno+=1
 
-	with open('./spatial_test_data_new.pickle', 'w') as f:
+	with open('./spatial_train_data_new.pickle', 'w') as f:
 		pickle.dump(dic, f)
 
 if __name__ == "__main__":
-	#write_images()
+	write_images()
 	gc.collect()
-	data_prep()
-
+	#data_prep()
