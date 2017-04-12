@@ -1,3 +1,6 @@
+'''
+argv[1] : model/path/*.h5
+'''
 from read_data import get_train_data, get_test_data, get_sample_data
 import random
 import cv2, numpy as np
@@ -22,20 +25,24 @@ def getSampleData(chunk,nb_classes,img_rows,img_cols):
 	X_train,Y_train = get_sample_data(chunk,img_rows,img_cols)
 	if (X_train!=None and Y_train!=None):
 		X_train/=255
-		#Y_train=np_utils.to_categorical(Y_train,nb_classes)
+		Y_train = list(map(int, Y_train))
+		Y_train=np_utils.to_categorical(Y_train,nb_classes)
 	return (X_train,Y_train)
 
 def getTestData(chunk,nb_classes,img_rows,img_cols):
 	X_train,Y_train = get_test_data(chunk,img_rows,img_cols)
 	if (X_train!=None and Y_train!=None):
 		X_train/=255
-		#Y_train=np_utils.to_categorical(Y_train,nb_classes)
+		Y_train = list(map(int, Y_train))
+		Y_train=np_utils.to_categorical(Y_train,nb_classes)
 	return (X_train,Y_train)
 
 def getTrainData(chunk,nb_classes,img_rows,img_cols):
 	X_train,Y_train = get_train_data(chunk,img_rows,img_cols)
 	if (X_train!=None and Y_train!=None):
 		X_train/=255
+		Y_train = list(map(int, Y_train))
+		Y_train=np_utils.to_categorical(Y_train,nb_classes)
 	return (X_train,Y_train)
 
 def test(model, nb_epoch, spatial_test_data, chunk_size, nb_classes, img_rows, img_cols, batch_size):
@@ -81,7 +88,7 @@ def train(model, nb_epoch, spatial_train_data, spatial_test_data, chunk_size, nb
 				instance_count+=chunk_size
 				print instance_count
 				#if instance_count%256==0:
-				model.save_weights('output/spatial_stream_model.h5',overwrite=True)
+				model.save_weights('model/spatial_stream_model.h5',overwrite=True)
 
 def VGG_16(img_rows,img_cols,weights_path=None):
 
@@ -128,7 +135,7 @@ def VGG_16(img_rows,img_cols,weights_path=None):
 	model.add(Dropout(0.9))
 	model.add(Dense(4096, activation='relu'))
 	model.add(Dropout(0.8))
-	model.add(Dense(20, activation='softmax'))
+	model.add(Dense(14, activation='softmax'))
 
 	if weights_path:
 	    model.load_weights(weights_path)
@@ -137,9 +144,9 @@ def VGG_16(img_rows,img_cols,weights_path=None):
 if __name__ == "__main__":
 
 	nb_epoch = 50
-	batch_size = 2
-	nb_classes = 20
-	chunk_size = 32
+	batch_size = 32
+	nb_classes = 14
+	chunk_size = 512
 	img_rows = 224
 	img_cols = 224
 	model =[]

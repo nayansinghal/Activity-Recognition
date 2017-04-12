@@ -12,7 +12,7 @@ def get_sample_data(chunk, img_row, img_col):
 	for imgname in chunk:
 		idx = imgname.rfind('_')
 		folder = imgname[:idx]
-		filename = './sp_images/train'+'/'+folder+'/'+imgname+'.jpg'
+		filename = './sp_images/train'+'/'+folder+'/'+folder+'/'+imgname+'.jpg'
 		img = imread(filename)
 		if img != None:
 			img = np.rollaxis(cv2.resize(img,(img_row,img_col)).astype(np.float32),2)
@@ -34,7 +34,7 @@ def get_train_data(chunk, img_row, img_col):
 			Y_train.append(spatial_train_data[imgname])
 			idx = imgname.rfind('_')
 			folder = imgname[:idx]
-			filename = './sp_images/train'+'/'+folder+'/'+imgname+'.jpg'
+			filename = './sp_images/train'+'/'+folder+'/'+folder+'/'+imgname+'.jpg'
 			img = imread(filename)
 			img = np.rollaxis(cv2.resize(img,(img_row,img_col)).astype(np.float32),2)
 			X_train.append(img)
@@ -57,7 +57,7 @@ def get_test_data(chunk, img_row, img_col):
 			Y_train.append(spatial_test_data[imgname])
 			idx = imgname.rfind('_')
 			folder = imgname[:idx]
-			filename = './sp_images/test'+'/'+folder+'/'+imgname+'.jpg'
+			filename = './sp_images/test'+'/'+folder+'/'+folder+'/'+imgname+'.jpg'
 			img = imread(filename)
 			img = np.rollaxis(cv2.resize(img,(img_row,img_col)).astype(np.float32),2)
 			X_train.append(img)
