@@ -1,84 +1,71 @@
 import numpy as np
+import optical_flow_prep as ofp
 import sys,os
 import pickle
 import scandir
 import gc
-import cv2
-import numpy as np
-from PIL import Image
-from skimage.io import imread
-from skimage.io import imsave
-import os.path
-
-def writeOpticalFlow(path,filename,w,h,c):
-	count=0
-	frame_no =1
-	try:
-		fileN = filename + "_" + str(frame_no) + ".jpg"
-		frame1 = imread(path + '/' + fileN)
-
-		if frame1==None:
-			return count
-
-		frame1 = cv2.resize(frame1, (w,h))
-		prvs = cv2.cvtColor(frame1,cv2.COLOR_BGR2GRAY)
-
-		folder = './of_images'+'/'+filename+'/'
-		dir = os.path.dirname(folder)
-		os.mkdir(dir)
-
-		while(1):
-			frame_no = frame_no + 1
-			fileN = filename + "_" + str(frame_no) + ".jpg"	
-			frame2 = imread(path + '/' + fileN)
-
-			if frame2==None:
-				break
-			count+=1
-
-			frame2 = cv2.resize(frame2, (w,h))
-			next = cv2.cvtColor(frame2,cv2.COLOR_BGR2GRAY)
-
-			flow = cv2.calcOpticalFlowFarneback(prvs,next, None, 0.5, 3, 15, 3, 5, 1.2, 0)
-
-			horz = cv2.normalize(flow[...,0], None, 0, 255, cv2.NORM_MINMAX)
-			vert = cv2.normalize(flow[...,1], None, 0, 255, cv2.NORM_MINMAX)
-			horz = horz.astype('uint8')
-			vert = vert.astype('uint8')
-
-			imsave(folder+'h'+str(count)+'_'+filename+'.jpg',horz)
-			imsave(folder+'h'+str(count)+'_'+filename+'.jpg',vert)
-				
-			prvs = next
-
-		cap.release()
-		cv2.destroyAllWindows()
-		return count
-	except Exception,e:
-		print e
-		return count
 
 def writeOF():
 
-	root = "../spatial/sp_images/"
-	w=224
-	h=224
-	c=0
-	data={}
+    root = "../videos"
+    w=224
+    h=224
+    c=0
+    data={}
 
-	for path, subdirs, files in scandir.walk(root):
-		if len(subdirs) == 0:
-			filename = path.split('/')[-1]
-			print filename
-			count=writeOpticalFlow(path,filename,w,h,c)
-			if count:
-				data[filename]=count
-			c+=1
-			with open("done.txt", "a") as myfile:
-				myfile.write(filename+'-'+str(c)+'\n')
+    for path, subdsirs, files in scandir.walk(root):
+        for filename in files:
+            count=ofp.writeOpticalFlow(path,filename,w,h,c)
+            if count:
+                data[filename]=count
+            print filename
+            c+=1
+            with open("done.txt", "a") as myfile:
+                myfile.write(filename+'-'+str(c)+'\n')
 
-	with open('../dataset/frame_count.pickle','wb') as f:
-		pickle.dump(data,f)
+    with open('../dataset/frame_count.pickle','wb') as f:
+        pickle.dump(data,f)
+
+
+def data_prep():
+    print 'Starting with data prep'
+    with open('../dataset/frame_count.pickle','rb') as f1:
+        frame_count=pickle.load(f1)
+    with open('../dataset/merged_data.pickle','rb') as f2:
+        merged_data=pickle.load(f2)
+    print 'Loaded dictionary'
+    root = './of_images'
+    path = os.path.join(root, '')
+    data={}
+    misplaced_data=[]
+    count=0
+    for path, subdirs, files in scandir.walk(root):
+        for filename in files:
+            print filename + '  ' + str(count)
+            count+=1
+            try:
+                vidname=filename.split('_',1)[1].split('.')[0]
+                fc=frame_count[vidname]
+
+
+                for i,j in enumerate(merged_data[vidname]):
+                    if j:
+                        index=i
+                        break
+                for i in range(1,(fc/30)+1):
+                    data[vidname+'@'+str(i)]=index+1
+            except:
+                misplaced_data.append(filename)
+
+    print 'Writing final training dictionary'
+    with open('../dataset/temporal_train_data.pickle','wb') as f3:
+        pickle.dump(data,f3)
+
+    print 'Writing misplaced videos'
+    with open('../dataset/misplaced_data.pickle','wb') as f4:
+        pickle.dump(misplaced_data,f4   )
 
 if __name__ == "__main__":
-	writeOF()
+    writeOF()
+    gc.collect()
+    data_prep()
