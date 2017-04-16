@@ -8,13 +8,14 @@ import pickle
 import h5py
 import sys
 
+from keras import backend as K
+K.set_image_dim_ordering('th')
 from keras.models import Sequential
 from keras.layers.core import Flatten, Dense, Dropout, RepeatVector
 from keras.layers.convolutional import Convolution2D, MaxPooling2D, ZeroPadding2D
 from keras.optimizers import SGD
 from keras.utils import np_utils
 from keras.preprocessing.image import ImageDataGenerator
-
 
 def chunks(l, n):
 	"""Yield successive n-sized chunks from l"""
@@ -48,9 +49,8 @@ def getTrainData(chunk,nb_classes,img_rows,img_cols):
 def test(model, nb_epoch, spatial_test_data, chunk_size, nb_classes, img_rows, img_cols, batch_size):
 	keys=spatial_test_data.keys()
 	random.shuffle(keys)
-	X_test,Y_test = getTestData(spatial_test_data.keys()[:500],nb_classes,img_rows,img_cols)
+	X_test,Y_test = getTestData(keys[:512],nb_classes,img_rows,img_cols)
 	return (X_test, Y_test)
-
 
 def train(model, nb_epoch, spatial_train_data, spatial_test_data, chunk_size, nb_classes, img_rows, img_cols, batch_size):
 
@@ -73,22 +73,29 @@ def train(model, nb_epoch, spatial_train_data, spatial_test_data, chunk_size, nb
 		print('-'*40)
 		print('Epoch', e)
 		print('-'*40)
-		print("Training...")
+		
 		instance_count=0
-
-		X_test,Y_test = test(model, nb_epoch, spatial_test_data, chunk_size, nb_classes, img_rows, img_cols, batch_size)
 
 		keys=spatial_train_data.keys()
 		random.shuffle(keys)
+
+		print("Training...")
 		for chunk in chunks(keys,chunk_size):
 			X_chunk,Y_chunk=getTrainData(chunk,nb_classes,img_rows,img_cols)
 			if (X_chunk!=None and Y_chunk!=None):
 				#for X_batch, Y_batch in datagen.flow(X_chunk, Y_chunk, batch_size=chunk_size):
-				loss = model.fit(X_chunk, Y_chunk, verbose=1, batch_size=batch_size, nb_epoch=1, validation_data=(X_test,Y_test))
+				loss = model.fit(X_chunk, Y_chunk, verbose=1, batch_size=batch_size, epochs=1)
 				instance_count+=chunk_size
 				print instance_count
-				#if instance_count%256==0:
-				model.save_weights('model/spatial_stream_model.h5',overwrite=True)
+				if instance_count%1536==0:
+					print("Loading Testing...")
+					X_test,Y_test = test(model, nb_epoch, spatial_test_data, chunk_size, nb_classes, img_rows, img_cols, batch_size)
+					loss = model.evaluate(X_test,Y_test,batch_size=batch_size,verbose=1)
+					print('Validation Loss:', loss)
+					print 'saving model/spatial_stream_model'+str(e*nb_epoch +instance_count)+'.h5'
+					model.save_weights('model/spatial_stream_model'+str(e*nb_epoch +instance_count)+'.h5',overwrite=True)
+					X_test = []
+					Y_test = []
 
 def VGG_16(img_rows,img_cols,weights_path=None):
 
@@ -129,31 +136,30 @@ def VGG_16(img_rows,img_cols,weights_path=None):
 	model.add(Convolution2D(512, 3, 3, activation='relu'))
 	model.add(MaxPooling2D((2,2), strides=(2,2)))
 	
-
 	model.add(Flatten())
 	model.add(Dense(4096, activation='relu'))
-	model.add(Dropout(0.9))
+	model.add(Dropout(0.5))
 	model.add(Dense(4096, activation='relu'))
-	model.add(Dropout(0.8))
+	model.add(Dropout(0.5))
 	model.add(Dense(14, activation='softmax'))
 
 	if weights_path:
-	    model.load_weights(weights_path)
+		model.load_weights(weights_path)
 	return model  
 
 if __name__ == "__main__":
 
 	nb_epoch = 50
-	batch_size = 32
+	batch_size = 64
 	nb_classes = 14
-	chunk_size = 512
+	chunk_size = 128
 	img_rows = 224
 	img_cols = 224
 	model =[]
 	print 'Making model...'
 	model = VGG_16(img_rows,img_cols, sys.argv[1])
 
-	sgd = SGD(lr=0.0001, decay=1e-6, momentum=0.9, nesterov=True)
+	sgd = SGD(lr=0.001, decay=1e-6, momentum=0.9, nesterov=True)
 
 	print 'Compiling model...'
 	model.compile(optimizer=sgd, loss='categorical_crossentropy')
