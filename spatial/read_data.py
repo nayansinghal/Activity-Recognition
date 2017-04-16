@@ -72,4 +72,4 @@ def get_test_data(chunk, img_row, img_col):
 		return X_train,Y_train
 
 if __name__ == '__main__':
-	get_data()          
+	get_data()
